@@ -1,0 +1,2 @@
+logger -p local0.info -t test_tag -n fluentd-service.monitoring.svc.cluster.local -P 514 "Test syslog FARZADFARZAD" --rfc3164
+

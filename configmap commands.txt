@@ -1,0 +1,38 @@
+for changes made in fluent.conf
+kubectl create configmap fluentd-main-config \
+  --from-file=fluent.conf \
+  -n monitoring \
+  --dry-run=client -o yaml > configmap-main.yaml
+
+kubectl apply -f configmap-main.yaml
+
+===================================================
+
+kubectl create configmap fluentd-extra-config \
+  --from-file=fluentd.d/ \
+  -n monitoring \
+  --dry-run=client -o yaml > configmap-extra.yaml
+
+kubectl apply -f configmap-extra.yaml
+
+===================================================
+
+to apply changes made in configmap
+kubectl rollout restart daemonset fluentd -n monitoring
+
+kubectl exec -it <fluentd-pod-name> -n monitoring -- ls /fluentd/etc/fluentd.d
+kubectl exec -it <fluentd-pod-name> -n monitoring -- cat /fluentd/etc/fluent.conf
+
+
+
+==================================================
+==================================================
+k delete configmaps -n monitoring fluentd-extra-configs
+
+kubectl create configmap fluentd-extra-configs \
+  --from-file=fluentd.d/ \
+  -n monitoring \
+  --dry-run=client -o yaml > configmap-extra.yaml
+
+k apply -f configmap-extra.yaml
+k rollout restart daemonset -n monitoring fluentd
