@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-exporter
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: event-exporter
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: event-exporter
+        version: v1
+      # Annotations removed
+    spec:
+      serviceAccountName: event-exporter
+      securityContext:
+        #commented due to fluentd runs with root user
+        #runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: event-exporter
+          image: ghcr.io/resmoio/kubernetes-event-exporter@sha256:8abb52b66557d3333f9e473e0eff2951309abfd018bd8d7fcfd86c4ecce6b9cf
+          imagePullPolicy: IfNotPresent
+          args:
+            - -conf=/data/config.yaml
+          volumeMounts:
+            - mountPath: /data
+              name: cfg
+            - mountPath: /events
+              name: shared-events
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          resources:
+            limits:
+              memory: 200Mi
+              cpu: 100m
+              ephemeral-storage: "1Gi"
+            requests:
+              cpu: 100m
+              memory: 200Mi
+              ephemeral-storage: "500Mi"
+        - name: fluentd-sidecar
+          image: fluent/fluentd-kubernetes-daemonset:v1.17-debian-syslog-1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: K8S_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - mountPath: /fluentd/etc/fluent.conf
+              name: fluentd-cfg
+              subPath: fluent.conf
+            - mountPath: /events
+              name: shared-events
+            - mountPath: /var/log/fluentd
+              name: fluentd-pos
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            #uncomment if you want to run as non root
+            #runAsUser: 1000
+            #runAsNonRoot: true
+          resources:
+            limits:
+              memory: 200Mi
+              cpu: 100m
+              ephemeral-storage: "1Gi"
+            requests:
+              cpu: 100m
+              memory: 200Mi
+              ephemeral-storage: "500Mi"
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: cfg
+          configMap:
+            name: event-exporter-cfg
+        - name: fluentd-cfg
+          configMap:
+            name: fluentd-cfg
+            items:
+              - key: fluent.conf
+                path: fluent.conf
+        - name: shared-events
+          emptyDir: {}
+        - name: fluentd-pos
+          emptyDir: {}

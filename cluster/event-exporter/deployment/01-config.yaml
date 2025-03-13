@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: event-exporter-cfg
+  namespace: monitoring
+data:
+  config.yaml: |
+    logLevel: warn
+    logFormat: json
+    metricsNamePrefix: event_exporter_
+    route:
+      routes:
+        - match:
+            - receiver: "syslog"
+    receivers:
+      - name: "syslog"
+        syslog:
+          network: "udp"
+          address: "fluentd-service.monitoring.svc.cluster.local:514"
+          #address: "10.109.248.84:514"
+          tag: "k8s.event"
