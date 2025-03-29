@@ -1,0 +1,1 @@
+2025-02-03T04:44:00.904275576+00:00 stderr F {"ts":1738557840904.059,"logger":"UnhandledError","caller":"resourcequota/resource_quota_controller.go:446","msg":"Unhandled Error","err":"unable to retrieve the complete list of server APIs: metrics.k8s.io/v1beta1: stale GroupVersion discovery: metrics.k8s.io/v1beta1", "error_code": "ERR001"}
